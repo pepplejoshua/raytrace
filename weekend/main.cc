@@ -1,19 +1,63 @@
 #include <iostream>
-#include "color.h"
+#include "includes/color.h"
+#include "includes/ray.h"
+#include "includes/vec3.h"
+
+color ray_color(const ray& r) {
+    return color(0, 0, 0);
+}
 
 int main() {
-    int img_width = 256;
-    int img_height = 256;
+    // defaults
+    auto aspect_ratio = 16.0 / 9.0;
+    int img_w = 400;
 
-    std::cout << "P3\n" << img_width << " " << img_height << "\n255\n";
+    // compute img height from defaults
+    // important formula:
+    // width / height = aspect ratio
+    // e.g: 16/9 = 1.7778
+    int img_h = static_cast<int>(img_w / aspect_ratio);
+    img_h = (img_h < 1) ? 1 : img_h;
 
-    for (int j = 0; j < img_height; j++) {
+    // camera stuff
+    auto focal_len = 1.0;
+    auto viewport_h = 2.0;
+
+    // compute viewport width from default height
+    // important formula:
+    // width / height = aspect ratio
+    auto viewport_w = viewport_h * (static_cast<double>(img_w) / img_h);
+    auto camera_center = point3(0, 0, 0);
+
+    // calculate the vectors across the horizontal and down the vertical
+    // viewport edges
+    auto viewport_u = vec3(viewport_w, 0, 0);
+    auto viewport_v = vec3(0, -viewport_h, 0);
+
+    // calculate the horizontal and vertical delta vectors from pixel to pixel
+    // For each pixel in the image, you would move a certain amount horizontally 
+    // and vertically across the viewport. pixel_delta_u is the amount you move 
+    // horizontally for each pixel, and pixel_delta_v is the amount you move 
+    // vertically. These values are used to calculate the exact position on the 
+    // viewport that the ray for each pixel should pass through.
+    auto pixel_delta_u = viewport_u / img_w;
+    auto pixel_delta_v = viewport_v / img_h;
+
+    // calculate the location of the upper left pixel
+    auto viewport_upper_left = camera_center - vec3(0, 0, focal_len)
+        - viewport_u / 2 - viewport_v / 2;
+    auto pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
+
+    // rendering
+    std::cout << "P3\n" << img_w << " " << img_h << "\n255\n";
+    for (int j = 0; j < img_h; j++) {
         std::clog << "\rscanlines remaining -- " << ' ' << std::flush;
-        for (int i = 0; i < img_width; i++) {
-            auto r = double(i) / (img_width - 1);
-            auto g = double(j) / (img_height - 1);
-            auto b = 0;
-            auto pixel_col = color(r, g, b);
+        for (int i = 0; i < img_w; i++) {
+            auto pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
+            auto ray_dir = pixel_center - camera_center;
+            ray r(camera_center, ray_dir);
+
+            color pixel_col = ray_color(r);
             write_color(std::cout, pixel_col);
         }
     }
