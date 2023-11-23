@@ -3,8 +3,13 @@
 #include "includes/ray.h"
 #include "includes/vec3.h"
 
+// lerp (linear interpolation) between white and blue
+// when a = 0, white and when a = 1, blue
+// in between, blend
 color ray_color(const ray& r) {
-    return color(0, 0, 0);
+    vec3 unit_dir = unit_vector(r.direction());
+    auto a = 0.5 * (unit_dir.y() + 1.0);
+    return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
 }
 
 int main() {
